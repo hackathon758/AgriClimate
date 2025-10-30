@@ -262,39 +262,82 @@ async def process_query(request: ChatRequest):
         # Step 2: Search for relevant datasets
         relevant_datasets = await data_service.search_datasets(request.question)
         
-        # Step 3: Fetch actual data from APIs
+        if not relevant_datasets:
+            # No relevant datasets found
+            error_msg = "क्षमा करें, इस प्रश्न के लिए data.gov.in पर कोई प्रासंगिक डेटासेट नहीं मिला। कृपया अपना प्रश्न पुनः शब्दबद्ध करें या कृषि, वर्षा, या फसल उत्पादन के बारे में पूछें।" if request.language == "hi" else "Sorry, no relevant datasets found on data.gov.in for this question. Please rephrase your question or ask about agriculture, rainfall, or crop production."
+            
+            assistant_message = ChatMessage(
+                session_id=session_id,
+                role="assistant",
+                content=error_msg,
+                sources=[]
+            )
+            doc = assistant_message.model_dump()
+            doc['timestamp'] = doc['timestamp'].isoformat()
+            await db.chat_messages.insert_one(doc)
+            
+            return ChatResponse(
+                session_id=session_id,
+                answer=error_msg,
+                sources=[],
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        
+        # Step 3: Fetch actual data from data.gov.in APIs
         data_context = []
         sources = []
-        has_live_data = False
+        all_records = []
         
-        if relevant_datasets:
-            for dataset in relevant_datasets:
-                try:
-                    records = await data_service.fetch_dataset(dataset["resource_id"], limit=50)
+        for dataset in relevant_datasets:
+            try:
+                records = await data_service.fetch_dataset(dataset["resource_id"], limit=100)
+                if records:
+                    # Store actual records for detailed analysis
+                    all_records.extend(records[:20])  # Include up to 20 records per dataset
+                    
+                    # Summarize dataset info
+                    data_summary = f"{dataset['title']}: {len(records)} records fetched from data.gov.in"
                     if records:
-                        has_live_data = True
-                        # Summarize data for context
-                        data_summary = f"{dataset['title']}: {len(records)} records available"
-                        if records:
-                            sample = records[0]
-                            data_summary += f". Sample fields: {', '.join(list(sample.keys())[:5])}"
-                        data_context.append(data_summary)
-                        
-                        sources.append({
-                            "title": dataset["title"],
-                            "ministry": dataset["ministry"],
-                            "url": f"https://data.gov.in/resource/{dataset['resource_id']}",
-                            "records": len(records)
-                        })
-                except Exception as e:
-                    logger.error(f"Error fetching {dataset['title']}: {str(e)}")
+                        sample = records[0]
+                        data_summary += f". Fields: {', '.join(list(sample.keys())[:8])}"
+                    data_context.append(data_summary)
+                    
+                    sources.append({
+                        "title": dataset["title"],
+                        "ministry": dataset["ministry"],
+                        "url": f"https://data.gov.in/resource/{dataset['resource_id']}",
+                        "records": len(records)
+                    })
+            except Exception as e:
+                logger.error(f"Error fetching {dataset['title']}: {str(e)}")
         
-        # Step 4: Generate answer using Gemini (with or without live data)
+        # Check if we got any actual data
+        if not data_context or not all_records:
+            error_msg = "क्षमा करें, data.gov.in से डेटा प्राप्त करने में त्रुटि हुई। कृपया कुछ समय बाद पुनः प्रयास करें या अपना प्रश्न पुनः शब्दबद्ध करें।" if request.language == "hi" else "Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question."
+            
+            assistant_message = ChatMessage(
+                session_id=session_id,
+                role="assistant",
+                content=error_msg,
+                sources=[]
+            )
+            doc = assistant_message.model_dump()
+            doc['timestamp'] = doc['timestamp'].isoformat()
+            await db.chat_messages.insert_one(doc)
+            
+            return ChatResponse(
+                session_id=session_id,
+                answer=error_msg,
+                sources=[],
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        
+        # Step 4: Generate answer using Gemini with live data ONLY
         answer = await answer_generator.generate_answer(
             request.question,
             data_context,
-            request.language,
-            has_live_data=has_live_data
+            all_records,
+            request.language
         )
         
         # Save assistant message with sources
