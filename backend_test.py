@@ -189,6 +189,219 @@ class AgriClimateAPITester:
             self.log_test("Chat History", False, f"Exception: {str(e)}")
             return False
 
+    def test_normal_flow_data_available(self):
+        """Test normal flow with data available - should return live data without fallback disclaimer"""
+        try:
+            payload = {
+                "question": "What are potato prices in Bihar?",
+                "session_id": f"test-normal-{uuid.uuid4()}",
+                "language": "en"
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                answer = data.get("answer", "")
+                sources = data.get("sources", [])
+                
+                # Should NOT contain fallback disclaimer
+                has_disclaimer = "⚠️ Note: Live data from data.gov.in is currently unavailable" in answer
+                has_sources = len(sources) > 0
+                
+                if not has_disclaimer and has_sources and len(answer) > 50:
+                    self.log_test("Normal Flow (Data Available)", True, f"Answer length: {len(answer)}, Sources: {len(sources)}, No disclaimer: {not has_disclaimer}")
+                    return True
+                else:
+                    self.log_test("Normal Flow (Data Available)", False, f"Has disclaimer: {has_disclaimer}, Sources: {len(sources)}, Answer length: {len(answer)}")
+                    return False
+            else:
+                self.log_test("Normal Flow (Data Available)", False, f"Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Normal Flow (Data Available)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_fallback_outside_domain(self):
+        """Test fallback for query outside domain - should trigger AI fallback with disclaimer"""
+        try:
+            payload = {
+                "question": "What is the weather forecast for tomorrow?",
+                "session_id": f"test-fallback-{uuid.uuid4()}",
+                "language": "en"
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                answer = data.get("answer", "")
+                sources = data.get("sources", [])
+                
+                # Should contain fallback disclaimer and empty sources
+                has_disclaimer = "⚠️ Note: Live data from data.gov.in is currently unavailable" in answer
+                sources_empty = len(sources) == 0
+                
+                if has_disclaimer and sources_empty and len(answer) > 100:
+                    self.log_test("Fallback (Outside Domain)", True, f"Has disclaimer: {has_disclaimer}, Empty sources: {sources_empty}, Answer length: {len(answer)}")
+                    return True
+                else:
+                    self.log_test("Fallback (Outside Domain)", False, f"Has disclaimer: {has_disclaimer}, Sources: {len(sources)}, Answer length: {len(answer)}")
+                    return False
+            else:
+                self.log_test("Fallback (Outside Domain)", False, f"Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Fallback (Outside Domain)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_fallback_obscure_query(self):
+        """Test fallback for obscure query - should trigger fallback with disclaimer"""
+        try:
+            payload = {
+                "question": "Tell me about quantum physics",
+                "session_id": f"test-obscure-{uuid.uuid4()}",
+                "language": "en"
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                answer = data.get("answer", "")
+                sources = data.get("sources", [])
+                
+                # Should contain fallback disclaimer and empty sources
+                has_disclaimer = "⚠️ Note: Live data from data.gov.in is currently unavailable" in answer
+                sources_empty = len(sources) == 0
+                
+                if has_disclaimer and sources_empty and len(answer) > 100:
+                    self.log_test("Fallback (Obscure Query)", True, f"Has disclaimer: {has_disclaimer}, Empty sources: {sources_empty}, Answer length: {len(answer)}")
+                    return True
+                else:
+                    self.log_test("Fallback (Obscure Query)", False, f"Has disclaimer: {has_disclaimer}, Sources: {len(sources)}, Answer length: {len(answer)}")
+                    return False
+            else:
+                self.log_test("Fallback (Obscure Query)", False, f"Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Fallback (Obscure Query)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_bilingual_fallback(self):
+        """Test bilingual fallback in Hindi - should trigger fallback with Hindi disclaimer"""
+        try:
+            payload = {
+                "question": "मौसम की जानकारी दें",  # Give weather information
+                "session_id": f"test-hindi-fallback-{uuid.uuid4()}",
+                "language": "hi"
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                answer = data.get("answer", "")
+                sources = data.get("sources", [])
+                
+                # Should contain Hindi fallback disclaimer and empty sources
+                has_hindi_disclaimer = "⚠️ नोट: data.gov.in से लाइव डेटा वर्तमान में उपलब्ध नहीं है" in answer
+                sources_empty = len(sources) == 0
+                has_hindi = any('\u0900' <= char <= '\u097F' for char in answer)
+                
+                if has_hindi_disclaimer and sources_empty and has_hindi and len(answer) > 100:
+                    self.log_test("Bilingual Fallback (Hindi)", True, f"Has Hindi disclaimer: {has_hindi_disclaimer}, Empty sources: {sources_empty}, Has Hindi: {has_hindi}, Answer length: {len(answer)}")
+                    return True
+                else:
+                    self.log_test("Bilingual Fallback (Hindi)", False, f"Has Hindi disclaimer: {has_hindi_disclaimer}, Sources: {len(sources)}, Has Hindi: {has_hindi}, Answer length: {len(answer)}")
+                    return False
+            else:
+                self.log_test("Bilingual Fallback (Hindi)", False, f"Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Bilingual Fallback (Hindi)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_session_continuity(self):
+        """Test session continuity - mix normal queries and fallback queries in same session"""
+        try:
+            session_id = f"test-continuity-{uuid.uuid4()}"
+            
+            # First query - normal (should have data)
+            payload1 = {
+                "question": "Show me potato prices",
+                "session_id": session_id,
+                "language": "en"
+            }
+            
+            response1 = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload1,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            # Second query - fallback (should trigger fallback)
+            payload2 = {
+                "question": "What is artificial intelligence?",
+                "session_id": session_id,
+                "language": "en"
+            }
+            
+            response2 = requests.post(
+                f"{self.api_url}/chat/query",
+                json=payload2,
+                headers={"Content-Type": "application/json"},
+                timeout=60
+            )
+            
+            if response1.status_code == 200 and response2.status_code == 200:
+                data1 = response1.json()
+                data2 = response2.json()
+                
+                # Verify session IDs match
+                same_session = data1.get("session_id") == data2.get("session_id") == session_id
+                
+                # First should have sources, second should not
+                first_has_sources = len(data1.get("sources", [])) > 0
+                second_no_sources = len(data2.get("sources", [])) == 0
+                
+                # Second should have disclaimer
+                second_has_disclaimer = "⚠️ Note: Live data from data.gov.in is currently unavailable" in data2.get("answer", "")
+                
+                if same_session and first_has_sources and second_no_sources and second_has_disclaimer:
+                    self.log_test("Session Continuity", True, f"Same session: {same_session}, First has sources: {first_has_sources}, Second fallback: {second_has_disclaimer}")
+                    return True
+                else:
+                    self.log_test("Session Continuity", False, f"Same session: {same_session}, First sources: {len(data1.get('sources', []))}, Second sources: {len(data2.get('sources', []))}, Second disclaimer: {second_has_disclaimer}")
+                    return False
+            else:
+                self.log_test("Session Continuity", False, f"Status codes: {response1.status_code}, {response2.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Session Continuity", False, f"Exception: {str(e)}")
+            return False
+
     def test_error_handling(self):
         """Test error handling with invalid requests"""
         try:
