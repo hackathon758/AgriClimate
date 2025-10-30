@@ -155,7 +155,7 @@ backend:
 
   - task: "Answer generation with live data"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
@@ -167,6 +167,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "BLOCKED: Cannot test answer generation due to LLM budget exceeded error. The data fetching and processing logic is correct, but the Gemini LLM calls fail with budget limit error. This affects both query processing and answer generation."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: Answer generation with live data is working excellently. All test queries generate comprehensive answers using actual data from data.gov.in API. Answers include specific price information, state/district details, and market data. Sources array is properly populated with dataset information including title, ministry, URL, and record count. Response structure includes session_id, answer, sources, and timestamp as required. Data fetching from resource_id 9ef84268-d588-465a-a308-a864a43d0070 returns 10 records successfully."
 
   - task: "Bilingual support (English/Hindi)"
     implemented: true
