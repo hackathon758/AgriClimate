@@ -343,13 +343,18 @@ async def process_query(request: ChatRequest):
         logger.info(f"Found {len(relevant_datasets)} relevant datasets for query: '{request.question}'")
         
         if not relevant_datasets:
-            # No relevant datasets found
-            error_msg = "क्षमा करें, इस प्रश्न के लिए data.gov.in पर कोई प्रासंगिक डेटासेट नहीं मिला। कृपया अपना प्रश्न पुनः शब्दबद्ध करें या कृषि, वर्षा, या फसल उत्पादन के बारे में पूछें।" if request.language == "hi" else "Sorry, no relevant datasets found on data.gov.in for this question. Please rephrase your question or ask about agriculture, rainfall, or crop production."
+            # No relevant datasets found - use AI fallback with general knowledge
+            logger.info("No relevant datasets found. Generating fallback answer using general knowledge.")
+            fallback_answer = await answer_generator.generate_fallback_answer(
+                request.question,
+                request.language,
+                reason="no_datasets"
+            )
             
             assistant_message = ChatMessage(
                 session_id=session_id,
                 role="assistant",
-                content=error_msg,
+                content=fallback_answer,
                 sources=[]
             )
             doc = assistant_message.model_dump()
@@ -358,7 +363,7 @@ async def process_query(request: ChatRequest):
             
             return ChatResponse(
                 session_id=session_id,
-                answer=error_msg,
+                answer=fallback_answer,
                 sources=[],
                 timestamp=datetime.now(timezone.utc).isoformat()
             )
