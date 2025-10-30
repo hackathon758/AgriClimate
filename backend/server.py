@@ -184,11 +184,26 @@ class DataService:
             if score > 0:
                 relevant.append(dataset)
         
-        # If no datasets matched, return all datasets as a fallback
-        # This ensures the system always tries to fetch data
+        # If no datasets matched, check if query is completely outside agricultural domain
+        # For non-agricultural queries, return empty to trigger AI fallback
         if not relevant:
-            logger.info(f"No specific match for query '{query}', using all datasets as fallback")
-            relevant = KNOWN_DATASETS.copy()
+            # Define clearly non-agricultural terms that should trigger fallback
+            non_agricultural_terms = [
+                'weather', 'forecast', 'quantum', 'physics', 'computing', 'technology',
+                'artificial intelligence', 'machine learning', 'software', 'programming',
+                'mathematics', 'chemistry', 'biology', 'history', 'geography', 'politics',
+                'entertainment', 'sports', 'music', 'movies', 'books', 'literature'
+            ]
+            
+            # Check if query contains clearly non-agricultural terms
+            is_non_agricultural = any(term in query_lower for term in non_agricultural_terms)
+            
+            if is_non_agricultural:
+                logger.info(f"Query '{query}' identified as non-agricultural. Triggering AI fallback.")
+                return []  # Return empty to trigger AI fallback
+            else:
+                logger.info(f"No specific match for query '{query}', using all datasets as fallback")
+                relevant = KNOWN_DATASETS.copy()
         
         return relevant[:3]  # Return top 3 relevant datasets
 
