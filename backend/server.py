@@ -74,21 +74,9 @@ DATA_GOV_KEY = "579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b"  # Pub
 KNOWN_DATASETS = [
     {
         "resource_id": "9ef84268-d588-465a-a308-a864a43d0070",
-        "title": "State-wise Agricultural Production",
+        "title": "Current Daily Price of Various Commodities from Various Markets (Mandi)",
         "ministry": "Ministry of Agriculture & Farmers Welfare",
-        "description": "State and crop-wise agricultural production data"
-    },
-    {
-        "resource_id": "696a1b36-a7d6-406a-9cd3-06d3e55de3e0",
-        "title": "Rainfall Statistics",
-        "ministry": "India Meteorological Department",
-        "description": "State-wise rainfall data and patterns"
-    },
-    {
-        "resource_id": "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69",
-        "title": "Crop Yield Data",
-        "ministry": "Ministry of Agriculture & Farmers Welfare",
-        "description": "Crop-wise yield statistics across states"
+        "description": "Current daily prices of agricultural commodities including vegetables, fruits, and crops from mandis across India. Includes state-wise, district-wise, and market-wise price data for various commodities."
     }
 ]
 
