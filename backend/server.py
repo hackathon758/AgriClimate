@@ -227,7 +227,7 @@ class AnswerGenerator:
     """Generate answers with source citations"""
     
     def __init__(self):
-        self.llm_key = os.environ.get('EMERGENT_LLM_KEY')
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
     
     async def generate_answer(self, question: str, data_context: List[Dict], records_data: List[Dict], language: str) -> str:
         """Generate natural language answer from live data only"""
@@ -240,7 +240,7 @@ Analyze and answer questions based ONLY on the live data provided from data.gov.
 Guidelines:
 - Use ONLY the data provided - do not add information from general knowledge
 - Be precise and cite specific numbers, states, and values from the actual data
-- Highlight trends, comparisons, and patterns found in the data
+- If data shows commodity prices, mention states, markets, and price ranges
 - Provide actionable insights for policymakers based on the data
 - Keep answers concise but comprehensive
 - If the data doesn't fully answer the question, clearly state what information is missing"""
@@ -256,16 +256,17 @@ Guidelines:
             for idx, record in enumerate(records_data[:10], 1):  # Include up to 10 records
                 context_text += f"\nRecord {idx}: {record}\n"
         
-        chat = LlmChat(
-            api_key=self.llm_key,
-            session_id="answer_generator",
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.5-pro")
+        prompt = f"{system_prompt}\n\nQuestion: {question}\n\n{context_text}"
         
-        user_msg = UserMessage(text=f"Question: {question}\n\n{context_text}")
-        response = await chat.send_message(user_msg)
-        
-        return response
+        try:
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
+            return response.text
+        except Exception as e:
+            logger.error(f"Error generating answer: {str(e)}")
+            return f"Unable to generate answer due to error: {str(e)}"
 
 # Initialize services
 data_service = DataService()
