@@ -173,7 +173,7 @@ backend:
 
   - task: "Bilingual support (English/Hindi)"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "medium"
@@ -184,7 +184,10 @@ backend:
         comment: "Needs testing to verify Hindi queries work correctly with expanded keyword matching."
       - working: false
         agent: "testing"
-        comment: "BLOCKED: Cannot test bilingual support due to LLM budget exceeded error. The keyword matching for Hindi queries works correctly (tested 'मूल्य दिखाएं'), but the LLM processing fails due to budget limits."
+        comment: "BLOCKED: Cannot test bilingual support due LLM budget exceeded error. The keyword matching for Hindi queries works correctly (tested 'मूल्य दिखाएं'), but the LLM processing fails due to budget limits."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: Bilingual support is working perfectly. Tested Hindi query 'मूल्य दिखाएं' (Show prices) - successfully processed and generated comprehensive 2038-character response in Hindi with proper Devanagari script. Keyword matching correctly identifies Hindi terms and maps them to relevant datasets. Answer generation respects language parameter and responds appropriately in Hindi when language='hi' is specified. Both English and Hindi queries work seamlessly."
 
 frontend:
   - task: "Chat interface"
