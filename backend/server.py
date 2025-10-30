@@ -196,7 +196,7 @@ class QueryProcessor:
     """Process natural language queries using Gemini"""
     
     def __init__(self):
-        self.llm_key = os.environ.get('EMERGENT_LLM_KEY')
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
     
     async def extract_query_intent(self, question: str, language: str) -> Dict[str, Any]:
         """Extract structured intent from natural language question"""
@@ -210,20 +210,17 @@ Extract key information from user questions:
 
 Respond in JSON format with: {"topic": "...", "location": "...", "time_period": "...", "metrics": [...], "query_type": "..."}"""
         
-        chat = LlmChat(
-            api_key=self.llm_key,
-            session_id="query_processor",
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.5-pro")
-        
-        user_msg = UserMessage(text=f"Analyze this {language} question: {question}")
-        response = await chat.send_message(user_msg)
+        prompt = f"{system_prompt}\n\nAnalyze this {language} question: {question}"
         
         try:
-            import json
-            intent = json.loads(response)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
+            intent = json.loads(response.text)
             return intent
-        except:
+        except Exception as e:
+            logger.error(f"Error extracting query intent: {str(e)}")
             return {"topic": question, "query_type": "general"}
 
 class AnswerGenerator:
