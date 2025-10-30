@@ -101,3 +101,111 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Fix bug where application shows 'Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question.' and test the entire application."
+
+backend:
+  - task: "Fix dataset search and matching algorithm"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "FIXED: Updated KNOWN_DATASETS to use correct dataset information. The resource_id 9ef84268-d588-465a-a308-a864a43d0070 is 'Current Daily Price of Various Commodities from Various Markets (Mandi)' not 'State-wise Agricultural Production'. Removed two invalid dataset IDs. Expanded keywords_map to include price-related keywords (price, cost, rate, mandi, market, commodity), specific crops (rice, wheat, potato, onion, tomato, vegetable, grain, fruit), and their Hindi equivalents. Added fallback logic to return all datasets if no specific match found. Added comprehensive logging for debugging."
+
+  - task: "Data fetching from data.gov.in API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Verified that data.gov.in API is working correctly and returning records. The fetch_dataset function should work properly now that search_datasets returns valid datasets. Added logging to track data fetching process."
+
+  - task: "Natural language query processing with Gemini"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Needs testing to verify query processing works with the fixed dataset search."
+
+  - task: "Answer generation with live data"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Needs testing to verify answers are generated correctly with actual data from API."
+
+  - task: "Bilingual support (English/Hindi)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Needs testing to verify Hindi queries work correctly with expanded keyword matching."
+
+frontend:
+  - task: "Chat interface"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "No frontend changes made. Will test after backend fixes are verified."
+
+  - task: "Language toggle (English/Hindi)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "No frontend changes made. Will test after backend fixes are verified."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Fix dataset search and matching algorithm"
+    - "Data fetching from data.gov.in API"
+    - "Natural language query processing with Gemini"
+    - "Answer generation with live data"
+  stuck_tasks: []
+  test_all: true
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Fixed the main bug causing 'unable to fetch data' error. Root cause was that search_datasets function was too restrictive and only matched very specific keywords like 'crop', 'rain', 'agriculture'. When users asked about 'rice', 'wheat', 'price', 'potato', etc., it returned 0 datasets. Additionally, KNOWN_DATASETS had incorrect information - 2 out of 3 dataset IDs were invalid. Fixed by: 1) Updating KNOWN_DATASETS with correct information, 2) Vastly expanding keywords_map to include price-related terms, specific crops, and Hindi equivalents, 3) Adding fallback to return all datasets if no match, 4) Adding comprehensive logging. Backend has been restarted and is running. Ready for testing."
