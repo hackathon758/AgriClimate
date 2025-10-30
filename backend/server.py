@@ -113,29 +113,73 @@ class DataService:
     
     @staticmethod
     async def search_datasets(query: str) -> List[Dict[str, str]]:
-        """Search for relevant datasets based on query"""
+        """Search for relevant datasets based on query with broad matching"""
         query_lower = query.lower()
         relevant = []
         
+        # Comprehensive keywords map covering agricultural topics
         keywords_map = {
-            "crop": ["production", "yield"],
-            "rain": ["rainfall", "precipitation"],
-            "agriculture": ["production", "yield", "farming"],
-            "climate": ["rainfall", "temperature"],
-            "फसल": ["production", "yield"],  # Hindi: crop
-            "बारिश": ["rainfall"],  # Hindi: rain
-            "कृषि": ["production", "yield"]  # Hindi: agriculture
+            # Price-related keywords
+            "price": ["price", "commodity", "mandi", "market"],
+            "cost": ["price", "commodity", "mandi", "market"],
+            "rate": ["price", "commodity", "mandi", "market"],
+            "mandi": ["price", "commodity", "mandi", "market"],
+            "market": ["price", "commodity", "mandi", "market"],
+            "commodity": ["price", "commodity", "mandi", "market"],
+            # Crop-related keywords
+            "crop": ["production", "yield", "commodity", "price"],
+            "agriculture": ["production", "yield", "farming", "commodity", "price"],
+            "farming": ["production", "yield", "commodity", "price"],
+            "production": ["production", "yield", "commodity"],
+            # Specific crops (common vegetables and grains)
+            "rice": ["commodity", "price", "production"],
+            "wheat": ["commodity", "price", "production"],
+            "potato": ["commodity", "price", "production"],
+            "onion": ["commodity", "price", "production"],
+            "tomato": ["commodity", "price", "production"],
+            "vegetable": ["commodity", "price", "production"],
+            "grain": ["commodity", "price", "production"],
+            "fruit": ["commodity", "price", "production"],
+            # Hindi equivalents
+            "मूल्य": ["price", "commodity", "mandi", "market"],  # price
+            "कीमत": ["price", "commodity", "mandi", "market"],  # price/cost
+            "मंडी": ["price", "commodity", "mandi", "market"],  # mandi
+            "फसल": ["production", "yield", "commodity", "price"],  # crop
+            "कृषि": ["production", "yield", "commodity", "price"],  # agriculture
+            "चावल": ["commodity", "price", "production"],  # rice
+            "गेहूं": ["commodity", "price", "production"],  # wheat
+            "आलू": ["commodity", "price", "production"],  # potato
+            "प्याज": ["commodity", "price", "production"],  # onion
+            "टमाटर": ["commodity", "price", "production"],  # tomato
+            "सब्जी": ["commodity", "price", "production"],  # vegetable
         }
         
+        # Search logic with scoring
         for dataset in KNOWN_DATASETS:
             score = 0
+            dataset_text = f"{dataset['title'].lower()} {dataset['description'].lower()}"
+            
+            # Check keyword matches
             for keyword, related in keywords_map.items():
                 if keyword in query_lower:
-                    if any(r in dataset["title"].lower() or r in dataset["description"].lower() for r in related):
+                    if any(r in dataset_text for r in related):
+                        score += 2
+            
+            # Check if any word from query is in dataset title or description
+            query_words = query_lower.split()
+            for word in query_words:
+                if len(word) > 3:  # Only consider words longer than 3 characters
+                    if word in dataset_text:
                         score += 1
             
-            if score > 0 or any(word in dataset["title"].lower() for word in query_lower.split()):
+            if score > 0:
                 relevant.append(dataset)
+        
+        # If no datasets matched, return all datasets as a fallback
+        # This ensures the system always tries to fetch data
+        if not relevant:
+            logger.info(f"No specific match for query '{query}', using all datasets as fallback")
+            relevant = KNOWN_DATASETS.copy()
         
         return relevant[:3]  # Return top 3 relevant datasets
 
