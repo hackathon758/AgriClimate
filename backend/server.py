@@ -267,6 +267,46 @@ Guidelines:
         except Exception as e:
             logger.error(f"Error generating answer: {str(e)}")
             return f"Unable to generate answer due to error: {str(e)}"
+    
+    async def generate_fallback_answer(self, question: str, language: str, reason: str = "data_unavailable") -> str:
+        """Generate answer using general knowledge when live data is unavailable"""
+        lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
+        
+        disclaimer_en = "⚠️ Note: Live data from data.gov.in is currently unavailable. This answer is based on general knowledge.\n\n"
+        disclaimer_hi = "⚠️ नोट: data.gov.in से लाइव डेटा वर्तमान में उपलब्ध नहीं है। यह उत्तर सामान्य ज्ञान पर आधारित है।\n\n"
+        disclaimer = disclaimer_hi if language == "hi" else disclaimer_en
+        
+        system_prompt = f"""You are an agricultural and climate expert for India with extensive knowledge about:
+- Agricultural commodity prices and market trends
+- Crop production and seasonal patterns
+- State-wise agricultural statistics
+- Government agricultural policies and initiatives
+- Climate and weather patterns affecting agriculture
+
+Since live data from data.gov.in is not available right now, provide a helpful answer based on your general knowledge.
+{lang_instruction}.
+
+Guidelines:
+- Provide accurate and useful information based on general knowledge
+- Include typical price ranges, trends, and patterns where relevant
+- Mention that specific current data is not available but provide context
+- Be informative and helpful to farmers, policymakers, and citizens
+- Keep answers concise but comprehensive
+- Suggest checking official sources like data.gov.in for latest data"""
+        
+        prompt = f"{system_prompt}\n\nQuestion: {question}"
+        
+        try:
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
+            # Add disclaimer at the beginning
+            return disclaimer + response.text
+        except Exception as e:
+            logger.error(f"Error generating fallback answer: {str(e)}")
+            error_msg = "क्षमा करें, इस समय उत्तर उत्पन्न करने में असमर्थ।" if language == "hi" else "Sorry, unable to generate answer at this time."
+            return disclaimer + error_msg
 
 # Initialize services
 data_service = DataService()
