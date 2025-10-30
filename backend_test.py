@@ -445,6 +445,14 @@ class AgriClimateAPITester:
         self.test_chat_query_hindi()
         self.test_chat_history()
         
+        # AI Fallback Feature Tests (NEW)
+        print("\n🤖 Testing AI Fallback Feature:")
+        self.test_normal_flow_data_available()
+        self.test_fallback_outside_domain()
+        self.test_fallback_obscure_query()
+        self.test_bilingual_fallback()
+        self.test_session_continuity()
+        
         # Error handling tests
         self.test_error_handling()
         
