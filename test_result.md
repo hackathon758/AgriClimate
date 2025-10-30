@@ -213,13 +213,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Fix dataset search and matching algorithm"
-    - "Data fetching from data.gov.in API"
     - "Natural language query processing with Gemini"
     - "Answer generation with live data"
-  stuck_tasks: []
+    - "Bilingual support (English/Hindi)"
+  stuck_tasks:
+    - "Natural language query processing with Gemini"
+    - "Answer generation with live data"
+    - "Bilingual support (English/Hindi)"
   test_all: true
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
