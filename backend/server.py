@@ -306,7 +306,7 @@ async def process_query(request: ChatRequest):
                         "title": dataset["title"],
                         "ministry": dataset["ministry"],
                         "url": f"https://data.gov.in/resource/{dataset['resource_id']}",
-                        "records": len(records)
+                        "records": str(len(records))
                     })
             except Exception as e:
                 logger.error(f"Error fetching {dataset['title']}: {str(e)}")
