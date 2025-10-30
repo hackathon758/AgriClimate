@@ -270,19 +270,17 @@ async def process_query(request: ChatRequest):
         # Step 2: Search for relevant datasets
         relevant_datasets = await data_service.search_datasets(request.question)
         
-        if not relevant_datasets:
-            # Fallback response
-            answer = "मुझे खेद है, मैं इस प्रश्न के लिए प्रासंगिक डेटा नहीं ढूंढ पाया।" if request.language == "hi" else "I apologize, but I couldn't find relevant data for this question."
-            sources = []
-        else:
-            # Step 3: Fetch actual data from APIs
-            data_context = []
-            sources = []
-            
+        # Step 3: Fetch actual data from APIs
+        data_context = []
+        sources = []
+        has_live_data = False
+        
+        if relevant_datasets:
             for dataset in relevant_datasets:
                 try:
                     records = await data_service.fetch_dataset(dataset["resource_id"], limit=50)
                     if records:
+                        has_live_data = True
                         # Summarize data for context
                         data_summary = f"{dataset['title']}: {len(records)} records available"
                         if records:
@@ -298,16 +296,14 @@ async def process_query(request: ChatRequest):
                         })
                 except Exception as e:
                     logger.error(f"Error fetching {dataset['title']}: {str(e)}")
-            
-            # Step 4: Generate answer using Gemini
-            if data_context:
-                answer = await answer_generator.generate_answer(
-                    request.question,
-                    data_context,
-                    request.language
-                )
-            else:
-                answer = "डेटा लाते समय त्रुटि हुई। कृपया बाद में पुनः प्रयास करें।" if request.language == "hi" else "Error fetching data. Please try again later."
+        
+        # Step 4: Generate answer using Gemini (with or without live data)
+        answer = await answer_generator.generate_answer(
+            request.question,
+            data_context,
+            request.language,
+            has_live_data=has_live_data
+        )
         
         # Save assistant message with sources
         assistant_message = ChatMessage(
