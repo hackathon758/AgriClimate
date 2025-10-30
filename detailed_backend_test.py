@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 class DetailedAgriClimateAPITester:
-    def __init__(self, base_url="https://gov-data-fix.preview.emergentagent.com"):
+    def __init__(self, base_url="https://data-fallback.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_id = f"test-session-{uuid.uuid4()}"
