@@ -191,12 +191,13 @@ class AnswerGenerator:
     def __init__(self):
         self.llm_key = os.environ.get('EMERGENT_LLM_KEY')
     
-    async def generate_answer(self, question: str, data_context: List[Dict], language: str) -> str:
+    async def generate_answer(self, question: str, data_context: List[Dict], language: str, has_live_data: bool = True) -> str:
         """Generate natural language answer from data"""
         lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
         
-        system_prompt = f"""You are an agricultural and climate data expert for India. 
-Provide accurate, policy-relevant answers based on the provided data.
+        if has_live_data:
+            system_prompt = f"""You are an agricultural and climate data expert for India. 
+Provide accurate, policy-relevant answers based on the provided data from data.gov.in.
 {lang_instruction}.
 
 Guidelines:
@@ -205,11 +206,25 @@ Guidelines:
 - Provide actionable insights for policymakers
 - Keep answers concise but comprehensive
 - If data is insufficient, acknowledge limitations"""
+        else:
+            system_prompt = f"""You are an agricultural and climate data expert for India.
+Answer questions using your general knowledge about Indian agriculture and climate.
+{lang_instruction}.
+
+Guidelines:
+- Provide accurate information based on widely known facts
+- Mention that this is general information since live data is currently unavailable
+- Include relevant statistics and state names where applicable
+- Keep answers informative and policy-relevant
+- Suggest that for real-time data, users should check data.gov.in"""
         
         # Format data context
-        context_text = "Data available:\n"
-        for idx, item in enumerate(data_context, 1):
-            context_text += f"{idx}. {item}\n"
+        if data_context:
+            context_text = "Data available:\n"
+            for idx, item in enumerate(data_context, 1):
+                context_text += f"{idx}. {item}\n"
+        else:
+            context_text = "Note: Live data is currently unavailable. Provide answer based on general knowledge."
         
         chat = LlmChat(
             api_key=self.llm_key,
