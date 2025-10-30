@@ -225,10 +225,7 @@ test_plan:
     - "Natural language query processing with Gemini"
     - "Answer generation with live data"
     - "Bilingual support (English/Hindi)"
-  stuck_tasks:
-    - "Natural language query processing with Gemini"
-    - "Answer generation with live data"
-    - "Bilingual support (English/Hindi)"
+  stuck_tasks: []
   test_all: true
   test_priority: "stuck_first"
 
