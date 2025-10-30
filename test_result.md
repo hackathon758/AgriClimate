@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Fix bug where application shows 'Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question.' and test the entire application."
+user_problem_statement: "Fix bug where application shows 'Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question.' and test the entire application. NEW: If data can't be fetched from data sources, AI should handle and generate response using general knowledge."
 
 backend:
   - task: "Fix dataset search and matching algorithm"
