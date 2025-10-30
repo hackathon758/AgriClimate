@@ -323,8 +323,10 @@ async def process_query(request: ChatRequest):
         
         for dataset in relevant_datasets:
             try:
+                logger.info(f"Fetching data for dataset: {dataset['title']}")
                 records = await data_service.fetch_dataset(dataset["resource_id"], limit=100)
                 if records:
+                    logger.info(f"Successfully fetched {len(records)} records from {dataset['title']}")
                     # Store actual records for detailed analysis
                     all_records.extend(records[:20])  # Include up to 20 records per dataset
                     
