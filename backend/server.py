@@ -400,13 +400,17 @@ async def process_query(request: ChatRequest):
         
         # Check if we got any actual data
         if not data_context or not all_records:
-            logger.warning(f"No data fetched from any dataset. data_context: {len(data_context)}, all_records: {len(all_records)}")
-            error_msg = "क्षमा करें, data.gov.in से डेटा प्राप्त करने में त्रुटि हुई। कृपया कुछ समय बाद पुनः प्रयास करें या अपना प्रश्न पुनः शब्दबद्ध करें।" if request.language == "hi" else "Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question."
+            logger.warning(f"No data fetched from any dataset. Generating fallback answer using general knowledge.")
+            fallback_answer = await answer_generator.generate_fallback_answer(
+                request.question,
+                request.language,
+                reason="fetch_failed"
+            )
             
             assistant_message = ChatMessage(
                 session_id=session_id,
                 role="assistant",
-                content=error_msg,
+                content=fallback_answer,
                 sources=[]
             )
             doc = assistant_message.model_dump()
@@ -415,7 +419,7 @@ async def process_query(request: ChatRequest):
             
             return ChatResponse(
                 session_id=session_id,
-                answer=error_msg,
+                answer=fallback_answer,
                 sources=[],
                 timestamp=datetime.now(timezone.utc).isoformat()
             )
