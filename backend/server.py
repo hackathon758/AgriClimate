@@ -293,6 +293,7 @@ async def process_query(request: ChatRequest):
         
         # Step 2: Search for relevant datasets
         relevant_datasets = await data_service.search_datasets(request.question)
+        logger.info(f"Found {len(relevant_datasets)} relevant datasets for query: '{request.question}'")
         
         if not relevant_datasets:
             # No relevant datasets found
