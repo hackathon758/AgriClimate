@@ -137,7 +137,7 @@ backend:
 
   - task: "Natural language query processing with Gemini"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
@@ -149,6 +149,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "CRITICAL ISSUE: LLM service budget exceeded. Error: 'litellm.BadRequestError: OpenAIException - Budget has been exceeded! Current cost: 0.40491625, Max budget: 0.4'. This prevents all chat queries from working. The issue is with the LiteLLM budget configuration, not the application code. All /api/chat/query endpoints return 500 errors due to this budget limit."
+      - working: true
+        agent: "testing"
+        comment: "FIXED: Native Gemini API integration is working perfectly. Tested all specific queries from review request: 'What are potato prices in Bihar?', 'Show me potato prices', 'wheat prices in Maharashtra', 'मूल्य दिखाएं' (Hindi), 'commodity prices for vegetables', 'tell me about onion prices'. All queries return 200 status codes with meaningful answers. Query intent extraction works with fallback logic. Dataset search algorithm correctly matches queries to relevant datasets. Minor: Some JSON parsing errors in intent extraction but system handles gracefully with fallback."
 
   - task: "Answer generation with live data"
     implemented: true
