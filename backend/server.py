@@ -348,6 +348,7 @@ async def process_query(request: ChatRequest):
         
         # Check if we got any actual data
         if not data_context or not all_records:
+            logger.warning(f"No data fetched from any dataset. data_context: {len(data_context)}, all_records: {len(all_records)}")
             error_msg = "क्षमा करें, data.gov.in से डेटा प्राप्त करने में त्रुटि हुई। कृपया कुछ समय बाद पुनः प्रयास करें या अपना प्रश्न पुनः शब्दबद्ध करें।" if request.language == "hi" else "Sorry, unable to fetch data from data.gov.in at this time. Please try again later or rephrase your question."
             
             assistant_message = ChatMessage(
