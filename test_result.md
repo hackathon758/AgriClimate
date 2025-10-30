@@ -234,12 +234,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Natural language query processing with Gemini"
-    - "Answer generation with live data"
-    - "Bilingual support (English/Hindi)"
+    - "AI fallback with general knowledge when data unavailable"
   stuck_tasks: []
-  test_all: true
-  test_priority: "stuck_first"
+  test_all: false
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
