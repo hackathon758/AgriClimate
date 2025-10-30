@@ -191,15 +191,18 @@ backend:
 
   - task: "AI fallback with general knowledge when data unavailable"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "NEW FEATURE: Added generate_fallback_answer() method to AnswerGenerator class. When data fetch fails (no datasets found or API errors), instead of showing error message, AI generates helpful answer using general knowledge. Added clear disclaimer at the beginning of response indicating it's based on general knowledge, not live data. Handles both English and Hindi. Replaces error messages in two locations: (1) when no relevant datasets found, (2) when data fetch fails. Backend restarted successfully. Ready for testing."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: AI fallback feature is working perfectly! Comprehensive testing completed with all 5 test scenarios passing: ✅ Normal Flow (Data Available) - Returns live data without disclaimer, ✅ Fallback (Outside Domain) - Weather queries trigger AI fallback with disclaimer, ✅ Fallback (Obscure Query) - Quantum physics queries trigger fallback with disclaimer, ✅ Bilingual Fallback (Hindi) - Hindi weather queries trigger fallback with Hindi disclaimer, ✅ Session Continuity - Mixed normal/fallback queries work correctly in same session. Made minimal code change to improve non-agricultural query detection. All fallback responses include proper disclaimers and empty sources arrays. Feature ready for production use."
 
 frontend:
   - task: "Chat interface"
