@@ -191,40 +191,32 @@ class AnswerGenerator:
     def __init__(self):
         self.llm_key = os.environ.get('EMERGENT_LLM_KEY')
     
-    async def generate_answer(self, question: str, data_context: List[Dict], language: str, has_live_data: bool = True) -> str:
-        """Generate natural language answer from data"""
+    async def generate_answer(self, question: str, data_context: List[Dict], records_data: List[Dict], language: str) -> str:
+        """Generate natural language answer from live data only"""
         lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
         
-        if has_live_data:
-            system_prompt = f"""You are an agricultural and climate data expert for India. 
-Provide accurate, policy-relevant answers based on the provided data from data.gov.in.
+        system_prompt = f"""You are an agricultural and climate data expert for India. 
+Analyze and answer questions based ONLY on the live data provided from data.gov.in.
 {lang_instruction}.
 
 Guidelines:
-- Be precise and cite specific numbers from the data
-- Highlight trends and patterns
-- Provide actionable insights for policymakers
+- Use ONLY the data provided - do not add information from general knowledge
+- Be precise and cite specific numbers, states, and values from the actual data
+- Highlight trends, comparisons, and patterns found in the data
+- Provide actionable insights for policymakers based on the data
 - Keep answers concise but comprehensive
-- If data is insufficient, acknowledge limitations"""
-        else:
-            system_prompt = f"""You are an agricultural and climate data expert for India.
-Answer questions using your general knowledge about Indian agriculture and climate.
-{lang_instruction}.
-
-Guidelines:
-- Provide accurate information based on widely known facts
-- Mention that this is general information since live data is currently unavailable
-- Include relevant statistics and state names where applicable
-- Keep answers informative and policy-relevant
-- Suggest that for real-time data, users should check data.gov.in"""
+- If the data doesn't fully answer the question, clearly state what information is missing"""
         
-        # Format data context
-        if data_context:
-            context_text = "Data available:\n"
-            for idx, item in enumerate(data_context, 1):
-                context_text += f"{idx}. {item}\n"
-        else:
-            context_text = "Note: Live data is currently unavailable. Provide answer based on general knowledge."
+        # Format data context with actual records
+        context_text = "Live data from data.gov.in:\n\n"
+        for idx, item in enumerate(data_context, 1):
+            context_text += f"{idx}. {item}\n"
+        
+        # Add sample records for detailed analysis
+        if records_data:
+            context_text += "\nSample data records for analysis:\n"
+            for idx, record in enumerate(records_data[:10], 1):  # Include up to 10 records
+                context_text += f"\nRecord {idx}: {record}\n"
         
         chat = LlmChat(
             api_key=self.llm_key,
