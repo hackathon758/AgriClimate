@@ -111,59 +111,74 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "FIXED: Updated KNOWN_DATASETS to use correct dataset information. The resource_id 9ef84268-d588-465a-a308-a864a43d0070 is 'Current Daily Price of Various Commodities from Various Markets (Mandi)' not 'State-wise Agricultural Production'. Removed two invalid dataset IDs. Expanded keywords_map to include price-related keywords (price, cost, rate, mandi, market, commodity), specific crops (rice, wheat, potato, onion, tomato, vegetable, grain, fruit), and their Hindi equivalents. Added fallback logic to return all datasets if no specific match found. Added comprehensive logging for debugging."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: Dataset search algorithm is working correctly. Tested with multiple queries including 'rice prices', 'potato price trends', 'wheat prices in Maharashtra', 'मूल्य दिखाएं' (Hindi), 'commodity prices today', and 'mandi prices for vegetables'. All queries successfully match the correct dataset. Keywords mapping is comprehensive and includes both English and Hindi terms."
 
   - task: "Data fetching from data.gov.in API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Verified that data.gov.in API is working correctly and returning records. The fetch_dataset function should work properly now that search_datasets returns valid datasets. Added logging to track data fetching process."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: Data.gov.in API integration is working perfectly. Successfully fetched 10 records from resource_id 9ef84268-d588-465a-a308-a864a43d0070. Sample data shows current commodity prices with fields: state, district, market, commodity, variety, grade, arrival_date, min_price. API returns status 200 and valid JSON data structure."
 
   - task: "Natural language query processing with Gemini"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Needs testing to verify query processing works with the fixed dataset search."
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL ISSUE: LLM service budget exceeded. Error: 'litellm.BadRequestError: OpenAIException - Budget has been exceeded! Current cost: 0.40491625, Max budget: 0.4'. This prevents all chat queries from working. The issue is with the LiteLLM budget configuration, not the application code. All /api/chat/query endpoints return 500 errors due to this budget limit."
 
   - task: "Answer generation with live data"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Needs testing to verify answers are generated correctly with actual data from API."
+      - working: false
+        agent: "testing"
+        comment: "BLOCKED: Cannot test answer generation due to LLM budget exceeded error. The data fetching and processing logic is correct, but the Gemini LLM calls fail with budget limit error. This affects both query processing and answer generation."
 
   - task: "Bilingual support (English/Hindi)"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "low"
-    needs_retesting: true
+    stuck_count: 1
+    priority: "medium"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Needs testing to verify Hindi queries work correctly with expanded keyword matching."
+      - working: false
+        agent: "testing"
+        comment: "BLOCKED: Cannot test bilingual support due to LLM budget exceeded error. The keyword matching for Hindi queries works correctly (tested 'मूल्य दिखाएं'), but the LLM processing fails due to budget limits."
 
 frontend:
   - task: "Chat interface"
