@@ -189,6 +189,18 @@ backend:
         agent: "testing"
         comment: "VERIFIED: Bilingual support is working perfectly. Tested Hindi query 'मूल्य दिखाएं' (Show prices) - successfully processed and generated comprehensive 2038-character response in Hindi with proper Devanagari script. Keyword matching correctly identifies Hindi terms and maps them to relevant datasets. Answer generation respects language parameter and responds appropriately in Hindi when language='hi' is specified. Both English and Hindi queries work seamlessly."
 
+  - task: "AI fallback with general knowledge when data unavailable"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE: Added generate_fallback_answer() method to AnswerGenerator class. When data fetch fails (no datasets found or API errors), instead of showing error message, AI generates helpful answer using general knowledge. Added clear disclaimer at the beginning of response indicating it's based on general knowledge, not live data. Handles both English and Hindi. Replaces error messages in two locations: (1) when no relevant datasets found, (2) when data fetch fails. Backend restarted successfully. Ready for testing."
+
 frontend:
   - task: "Chat interface"
     implemented: true
