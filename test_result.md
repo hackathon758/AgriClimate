@@ -258,7 +258,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Frontend testing complete - All scenarios verified"
+    - "AI fallback enhancements - Needs comprehensive testing"
+    - "Retry mechanism verification"
+    - "Hybrid mode testing"
+    - "Trusted sources validation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
