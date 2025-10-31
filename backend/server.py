@@ -93,32 +93,45 @@ class DataService:
     """Service to fetch and process data from data.gov.in"""
     
     @staticmethod
-    async def fetch_dataset(resource_id: str, filters: Dict = None, limit: int = 100) -> List[Dict]:
-        """Fetch data from data.gov.in API"""
-        try:
-            params = {
-                "api-key": DATA_GOV_KEY,
-                "format": "json",
-                "limit": limit
-            }
-            if filters:
-                params["filters"] = filters
-                
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
-                    f"{DATA_GOV_API}/{resource_id}",
-                    params=params
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    return data.get("records", [])
-                else:
-                    logger.error(f"API error: {response.status_code}")
-                    return []
-        except Exception as e:
-            logger.error(f"Error fetching dataset: {str(e)}")
-            return []
+    async def fetch_dataset(resource_id: str, filters: Dict = None, limit: int = 100, max_retries: int = 3) -> List[Dict]:
+        """Fetch data from data.gov.in API with retry mechanism"""
+        retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
+        
+        for attempt in range(max_retries):
+            try:
+                params = {
+                    "api-key": DATA_GOV_KEY,
+                    "format": "json",
+                    "limit": limit
+                }
+                if filters:
+                    params["filters"] = filters
+                    
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(
+                        f"{DATA_GOV_API}/{resource_id}",
+                        params=params
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        records = data.get("records", [])
+                        if attempt > 0:
+                            logger.info(f"✅ Successfully fetched data on retry attempt {attempt + 1}")
+                        return records
+                    else:
+                        logger.warning(f"API error on attempt {attempt + 1}: {response.status_code}")
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(retry_delays[attempt])
+                        
+            except Exception as e:
+                logger.error(f"Error fetching dataset (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delays[attempt]} seconds...")
+                    await asyncio.sleep(retry_delays[attempt])
+        
+        logger.error(f"Failed to fetch data after {max_retries} attempts")
+        return []
     
     @staticmethod
     async def search_datasets(query: str) -> List[Dict[str, str]]:
