@@ -535,8 +535,8 @@ async def process_query(request: ChatRequest):
         
         if not relevant_datasets:
             # No relevant datasets found - use AI fallback with general knowledge
-            logger.info("No relevant datasets found. Generating fallback answer using general knowledge.")
-            fallback_answer = await answer_generator.generate_fallback_answer(
+            logger.info("No relevant datasets found. Generating enhanced fallback answer with trusted sources.")
+            fallback_answer, trusted_sources = await answer_generator.generate_fallback_answer(
                 request.question,
                 request.language,
                 reason="no_datasets"
@@ -546,7 +546,7 @@ async def process_query(request: ChatRequest):
                 session_id=session_id,
                 role="assistant",
                 content=fallback_answer,
-                sources=[]
+                sources=trusted_sources
             )
             doc = assistant_message.model_dump()
             doc['timestamp'] = doc['timestamp'].isoformat()
@@ -555,11 +555,11 @@ async def process_query(request: ChatRequest):
             return ChatResponse(
                 session_id=session_id,
                 answer=fallback_answer,
-                sources=[],
+                sources=trusted_sources,
                 timestamp=datetime.now(timezone.utc).isoformat()
             )
         
-        # Step 3: Fetch actual data from data.gov.in APIs
+        # Step 3: Fetch actual data from data.gov.in APIs (with retry mechanism)
         data_context = []
         sources = []
         all_records = []
@@ -591,8 +591,8 @@ async def process_query(request: ChatRequest):
         
         # Check if we got any actual data
         if not data_context or not all_records:
-            logger.warning(f"No data fetched from any dataset. Generating fallback answer using general knowledge.")
-            fallback_answer = await answer_generator.generate_fallback_answer(
+            logger.warning(f"No data fetched from any dataset after retries. Generating enhanced fallback answer.")
+            fallback_answer, trusted_sources = await answer_generator.generate_fallback_answer(
                 request.question,
                 request.language,
                 reason="fetch_failed"
@@ -602,7 +602,7 @@ async def process_query(request: ChatRequest):
                 session_id=session_id,
                 role="assistant",
                 content=fallback_answer,
-                sources=[]
+                sources=trusted_sources
             )
             doc = assistant_message.model_dump()
             doc['timestamp'] = doc['timestamp'].isoformat()
@@ -611,7 +611,38 @@ async def process_query(request: ChatRequest):
             return ChatResponse(
                 session_id=session_id,
                 answer=fallback_answer,
-                sources=[],
+                sources=trusted_sources,
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+        
+        # Check if we have partial data (less than expected)
+        # If we have some data but it seems limited, use hybrid mode
+        if len(all_records) < 5:  # Threshold for "partial data"
+            logger.info(f"Limited data available ({len(all_records)} records). Using hybrid mode.")
+            hybrid_answer, trusted_sources = await answer_generator.generate_hybrid_answer(
+                request.question,
+                data_context,
+                all_records,
+                request.language
+            )
+            
+            # Combine live data sources with trusted reference sources
+            combined_sources = sources + trusted_sources[:3]  # Add top 3 trusted sources
+            
+            assistant_message = ChatMessage(
+                session_id=session_id,
+                role="assistant",
+                content=hybrid_answer,
+                sources=combined_sources
+            )
+            doc = assistant_message.model_dump()
+            doc['timestamp'] = doc['timestamp'].isoformat()
+            await db.chat_messages.insert_one(doc)
+            
+            return ChatResponse(
+                session_id=session_id,
+                answer=hybrid_answer,
+                sources=combined_sources,
                 timestamp=datetime.now(timezone.utc).isoformat()
             )
         
