@@ -330,6 +330,38 @@ class AnswerGenerator:
     def __init__(self):
         self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
     
+    @staticmethod
+    def get_relevant_sources(question: str) -> List[Dict[str, str]]:
+        """Get relevant trusted sources based on query topic"""
+        question_lower = question.lower()
+        relevant_sources = []
+        
+        # Determine query topic and add relevant sources
+        if any(word in question_lower for word in ['price', 'cost', 'rate', 'mandi', 'market', 'मूल्य', 'कीमत', 'मंडी']):
+            relevant_sources.extend(TRUSTED_SOURCES['prices'])
+        
+        if any(word in question_lower for word in ['crop', 'production', 'yield', 'farming', 'फसल', 'उत्पादन']):
+            relevant_sources.extend(TRUSTED_SOURCES['crops'])
+        
+        if any(word in question_lower for word in ['weather', 'climate', 'rainfall', 'monsoon', 'मौसम', 'जलवायु', 'बारिश']):
+            relevant_sources.extend(TRUSTED_SOURCES['climate'])
+        
+        if any(word in question_lower for word in ['agriculture', 'agricultural', 'farming', 'कृषि']):
+            relevant_sources.extend(TRUSTED_SOURCES['agriculture'])
+        
+        # Always add general sources
+        relevant_sources.extend(TRUSTED_SOURCES['general'])
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_sources = []
+        for source in relevant_sources:
+            if source['url'] not in seen:
+                seen.add(source['url'])
+                unique_sources.append(source)
+        
+        return unique_sources[:5]  # Return top 5 most relevant sources
+    
     async def generate_answer(self, question: str, data_context: List[Dict], records_data: List[Dict], language: str) -> str:
         """Generate natural language answer from live data only"""
         lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
@@ -369,12 +401,63 @@ Guidelines:
             logger.error(f"Error generating answer: {str(e)}")
             return f"Unable to generate answer due to error: {str(e)}"
     
-    async def generate_fallback_answer(self, question: str, language: str, reason: str = "data_unavailable") -> str:
-        """Generate answer using general knowledge when live data is unavailable"""
+    async def generate_hybrid_answer(self, question: str, partial_data: List[Dict], partial_records: List[Dict], language: str) -> tuple:
+        """Generate hybrid answer combining partial live data with AI knowledge"""
         lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
         
-        disclaimer_en = "⚠️ Note: Live data from data.gov.in is currently unavailable. This answer is based on general knowledge.\n\n"
-        disclaimer_hi = "⚠️ नोट: data.gov.in से लाइव डेटा वर्तमान में उपलब्ध नहीं है। यह उत्तर सामान्य ज्ञान पर आधारित है।\n\n"
+        disclaimer_en = "ℹ️ Hybrid Response: Combining available live data with general knowledge for a comprehensive answer.\n\n"
+        disclaimer_hi = "ℹ️ हाइब्रिड प्रतिक्रिया: व्यापक उत्तर के लिए उपलब्ध लाइव डेटा को सामान्य ज्ञान के साथ जोड़ना।\n\n"
+        disclaimer = disclaimer_hi if language == "hi" else disclaimer_en
+        
+        system_prompt = f"""You are an agricultural and climate expert for India. 
+You have PARTIAL live data from data.gov.in, but not complete information to fully answer the question.
+
+Your task:
+1. First, analyze and present the LIVE DATA that IS available (mark this section clearly)
+2. Then, supplement with general knowledge to provide a complete answer (mark this section clearly)
+3. Be transparent about which parts are from live data vs general knowledge
+{lang_instruction}.
+
+Guidelines:
+- Clearly separate live data insights from general knowledge
+- Use phrases like "Based on available live data..." and "From general knowledge..."
+- Provide practical examples and seasonal trends
+- Include typical price ranges, production patterns, or climate information
+- Offer actionable tips for farmers or policymakers
+- Keep the answer comprehensive but well-structured"""
+        
+        # Format partial data context
+        context_text = "Partial live data available from data.gov.in:\n\n"
+        for idx, item in enumerate(partial_data, 1):
+            context_text += f"{idx}. {item}\n"
+        
+        if partial_records:
+            context_text += "\nSample records from available data:\n"
+            for idx, record in enumerate(partial_records[:5], 1):
+                context_text += f"\nRecord {idx}: {record}\n"
+        
+        prompt = f"{system_prompt}\n\nQuestion: {question}\n\n{context_text}"
+        
+        try:
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
+            # Get relevant trusted sources
+            trusted_sources = self.get_relevant_sources(question)
+            
+            return disclaimer + response.text, trusted_sources
+        except Exception as e:
+            logger.error(f"Error generating hybrid answer: {str(e)}")
+            error_msg = "क्षमा करें, उत्तर उत्पन्न करने में त्रुटि।" if language == "hi" else "Error generating answer."
+            return disclaimer + error_msg, []
+    
+    async def generate_fallback_answer(self, question: str, language: str, reason: str = "data_unavailable") -> tuple:
+        """Generate enhanced answer using general knowledge with trusted sources"""
+        lang_instruction = "Answer in Hindi (हिंदी में उत्तर दें)" if language == "hi" else "Answer in English"
+        
+        disclaimer_en = "⚠️ Note: Live data from data.gov.in is currently unavailable. This answer is based on general knowledge and trusted sources.\n\n"
+        disclaimer_hi = "⚠️ नोट: data.gov.in से लाइव डेटा वर्तमान में उपलब्ध नहीं है। यह उत्तर सामान्य ज्ञान और विश्वसनीय स्रोतों पर आधारित है।\n\n"
         disclaimer = disclaimer_hi if language == "hi" else disclaimer_en
         
         system_prompt = f"""You are an agricultural and climate expert for India with extensive knowledge about:
@@ -383,17 +466,21 @@ Guidelines:
 - State-wise agricultural statistics
 - Government agricultural policies and initiatives
 - Climate and weather patterns affecting agriculture
+- Best practices and practical farming tips
 
-Since live data from data.gov.in is not available right now, provide a helpful answer based on your general knowledge.
+Since live data from data.gov.in is not available right now, provide a COMPREHENSIVE and ENHANCED answer based on your general knowledge.
 {lang_instruction}.
 
-Guidelines:
-- Provide accurate and useful information based on general knowledge
-- Include typical price ranges, trends, and patterns where relevant
-- Mention that specific current data is not available but provide context
-- Be informative and helpful to farmers, policymakers, and citizens
-- Keep answers concise but comprehensive
-- Suggest checking official sources like data.gov.in for latest data"""
+Guidelines for ENHANCED responses:
+- Provide detailed, actionable information with practical examples
+- Include seasonal trends and typical patterns (e.g., "Prices typically rise during...")
+- Add practical tips for farmers or policymakers
+- Mention typical price ranges or production statistics from recent years
+- Include regional variations if relevant (e.g., "In Maharashtra..." vs "In Punjab...")
+- Suggest best practices and government schemes when applicable
+- Provide context about factors affecting the topic (weather, market demand, etc.)
+- Make answers comprehensive but well-structured with clear sections
+- End with a note about checking official sources for latest real-time data"""
         
         prompt = f"{system_prompt}\n\nQuestion: {question}"
         
@@ -402,12 +489,15 @@ Guidelines:
                 self.model.generate_content,
                 prompt
             )
-            # Add disclaimer at the beginning
-            return disclaimer + response.text
+            # Get relevant trusted sources for this query
+            trusted_sources = self.get_relevant_sources(question)
+            
+            # Return both answer and sources
+            return disclaimer + response.text, trusted_sources
         except Exception as e:
             logger.error(f"Error generating fallback answer: {str(e)}")
             error_msg = "क्षमा करें, इस समय उत्तर उत्पन्न करने में असमर्थ।" if language == "hi" else "Sorry, unable to generate answer at this time."
-            return disclaimer + error_msg
+            return disclaimer + error_msg, []
 
 # Initialize services
 data_service = DataService()
