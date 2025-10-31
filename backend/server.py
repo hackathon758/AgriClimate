@@ -271,12 +271,12 @@ class DataService:
         if not relevant:
             # Define clearly non-agricultural terms that should trigger fallback
             non_agricultural_terms = [
-                'weather', 'forecast', 'quantum', 'physics', 'computing', 'technology',
+                'weather', 'forecast', 'climate', 'quantum', 'physics', 'computing', 'technology',
                 'artificial intelligence', 'machine learning', 'software', 'programming',
                 'mathematics', 'chemistry', 'biology', 'history', 'geography', 'politics',
                 'entertainment', 'sports', 'music', 'movies', 'books', 'literature',
                 # Hindi terms
-                'मौसम', 'भविष्यवाणी', 'क्वांटम', 'भौतिकी', 'कंप्यूटिंग', 'तकनीक',
+                'मौसम', 'भविष्यवाणी', 'जलवायु', 'क्वांटम', 'भौतिकी', 'कंप्यूटिंग', 'तकनीक',
                 'कृत्रिम बुद्धिमत्ता', 'मशीन लर्निंग', 'सॉफ्टवेयर', 'प्रोग्रामिंग',
                 'गणित', 'रसायन', 'जीवविज्ञान', 'इतिहास', 'भूगोल', 'राजनीति'
             ]
