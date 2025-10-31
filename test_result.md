@@ -191,11 +191,11 @@ backend:
 
   - task: "AI fallback with general knowledge when data unavailable"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -203,6 +203,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "VERIFIED: AI fallback feature is working perfectly! Comprehensive testing completed with all 5 test scenarios passing: ✅ Normal Flow (Data Available) - Returns live data without disclaimer, ✅ Fallback (Outside Domain) - Weather queries trigger AI fallback with disclaimer, ✅ Fallback (Obscure Query) - Quantum physics queries trigger fallback with disclaimer, ✅ Bilingual Fallback (Hindi) - Hindi weather queries trigger fallback with Hindi disclaimer, ✅ Session Continuity - Mixed normal/fallback queries work correctly in same session. Made minimal code change to improve non-agricultural query detection. All fallback responses include proper disclaimers and empty sources arrays. Feature ready for production use."
+      - working: "NA"
+        agent: "main"
+        comment: "ENHANCED: Implemented 4 major improvements to AI fallback feature based on user request (options 2,3,5,6): (1) RETRY MECHANISM: Added automatic retry with exponential backoff (3 retries: 1s, 2s, 4s delays) in fetch_dataset() before falling back to AI. (2) ENHANCED RESPONSES: Updated fallback prompts to generate more detailed answers with practical examples, seasonal trends, typical price ranges, regional variations, best practices, and government schemes. (3) HYBRID MODE: Added generate_hybrid_answer() that combines partial live data with AI knowledge when limited data is available (threshold: <5 records). Uses clear section markers to distinguish live data from AI knowledge. (4) FALLBACK SOURCES: Added TRUSTED_SOURCES dictionary with 15+ trusted government/research websites (Agmarknet, IMD, Ministry of Agriculture, ICAR, etc.). get_relevant_sources() method intelligently selects top 5 relevant sources based on query topic. Sources now returned in all fallback and hybrid responses. Backend restarted successfully. Ready for comprehensive testing."
 
 frontend:
   - task: "Chat interface"
