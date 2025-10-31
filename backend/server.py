@@ -89,6 +89,75 @@ KNOWN_DATASETS = [
     }
 ]
 
+# Trusted reference sources for fallback responses
+TRUSTED_SOURCES = {
+    "agriculture": [
+        {
+            "title": "Ministry of Agriculture & Farmers Welfare",
+            "url": "https://agricoop.nic.in/",
+            "description": "Official portal for agricultural statistics and schemes"
+        },
+        {
+            "title": "India Meteorological Department",
+            "url": "https://mausam.imd.gov.in/",
+            "description": "Weather forecasts and agricultural advisories"
+        },
+        {
+            "title": "National Portal of India - Agriculture",
+            "url": "https://www.india.gov.in/topics/agriculture",
+            "description": "Comprehensive agricultural information and resources"
+        }
+    ],
+    "prices": [
+        {
+            "title": "Agmarknet - MANDI Portal",
+            "url": "https://agmarknet.gov.in/",
+            "description": "Real-time agricultural commodity prices from mandis"
+        },
+        {
+            "title": "Department of Consumer Affairs",
+            "url": "https://consumeraffairs.nic.in/",
+            "description": "Price monitoring and consumer information"
+        }
+    ],
+    "crops": [
+        {
+            "title": "Directorate of Economics & Statistics",
+            "url": "https://eands.dacnet.nic.in/",
+            "description": "Crop production statistics and agricultural census"
+        },
+        {
+            "title": "Indian Council of Agricultural Research",
+            "url": "https://icar.org.in/",
+            "description": "Research findings and best practices"
+        }
+    ],
+    "climate": [
+        {
+            "title": "India Meteorological Department",
+            "url": "https://mausam.imd.gov.in/",
+            "description": "Climate data and weather predictions"
+        },
+        {
+            "title": "Ministry of Earth Sciences",
+            "url": "https://www.moes.gov.in/",
+            "description": "Climate research and monsoon forecasts"
+        }
+    ],
+    "general": [
+        {
+            "title": "Data.gov.in",
+            "url": "https://data.gov.in/",
+            "description": "India's open government data platform"
+        },
+        {
+            "title": "PM-KISAN Portal",
+            "url": "https://pmkisan.gov.in/",
+            "description": "Direct income support for farmers"
+        }
+    ]
+}
+
 class DataService:
     """Service to fetch and process data from data.gov.in"""
     
