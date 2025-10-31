@@ -484,20 +484,21 @@ Guidelines for ENHANCED responses:
         
         prompt = f"{system_prompt}\n\nQuestion: {question}"
         
+        # Get relevant trusted sources for this query (do this first, before AI call)
+        trusted_sources = self.get_relevant_sources(question)
+        
         try:
             response = await asyncio.to_thread(
                 self.model.generate_content,
                 prompt
             )
-            # Get relevant trusted sources for this query
-            trusted_sources = self.get_relevant_sources(question)
-            
             # Return both answer and sources
             return disclaimer + response.text, trusted_sources
         except Exception as e:
             logger.error(f"Error generating fallback answer: {str(e)}")
             error_msg = "क्षमा करें, इस समय उत्तर उत्पन्न करने में असमर्थ।" if language == "hi" else "Sorry, unable to generate answer at this time."
-            return disclaimer + error_msg, []
+            # Still return trusted sources even if AI generation fails
+            return disclaimer + error_msg, trusted_sources
 
 # Initialize services
 data_service = DataService()
