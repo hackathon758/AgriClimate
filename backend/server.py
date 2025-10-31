@@ -438,19 +438,20 @@ Guidelines:
         
         prompt = f"{system_prompt}\n\nQuestion: {question}\n\n{context_text}"
         
+        # Get relevant trusted sources (do this first, before AI call)
+        trusted_sources = self.get_relevant_sources(question)
+        
         try:
             response = await asyncio.to_thread(
                 self.model.generate_content,
                 prompt
             )
-            # Get relevant trusted sources
-            trusted_sources = self.get_relevant_sources(question)
-            
             return disclaimer + response.text, trusted_sources
         except Exception as e:
             logger.error(f"Error generating hybrid answer: {str(e)}")
             error_msg = "क्षमा करें, उत्तर उत्पन्न करने में त्रुटि।" if language == "hi" else "Error generating answer."
-            return disclaimer + error_msg, []
+            # Still return trusted sources even if AI generation fails
+            return disclaimer + error_msg, trusted_sources
     
     async def generate_fallback_answer(self, question: str, language: str, reason: str = "data_unavailable") -> tuple:
         """Generate enhanced answer using general knowledge with trusted sources"""
